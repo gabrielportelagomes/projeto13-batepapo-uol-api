@@ -89,6 +89,19 @@ app.get("/messages", async (req, res) => {
   }
 });
 
+app.post("/status", async (req, res) => {
+  const name = req.headers.user;
+
+  try {
+    await db
+      .collection("participants")
+      .updateOne({ name }, { $set: { lastStatus: Date.now() } });
+  } catch (err) {
+    console.log(err);
+    res.sendStatus(500);
+  }
+});
+
 app.listen(5000, () => {
   console.log(`Server running in port: ${5000}`);
 });
