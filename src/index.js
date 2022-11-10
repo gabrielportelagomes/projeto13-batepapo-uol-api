@@ -58,6 +58,27 @@ app.get("/participants", async (req, res) => {
   }
 });
 
+app.post("/messages", async (req, res) => {
+  const { to, text, type } = req.body;
+  const from = req.headers.user;
+
+  const newMessage = {
+    from,
+    to,
+    text,
+    type,
+    time: dayjs(Date.now()).format("HH:mm:ss"),
+  };
+
+  try {
+    await db.collection("messages").insertOne(newMessage);
+    res.sendStatus(201);
+  } catch (err) {
+    console.log(err);
+    res.sendStatus(500);
+  }
+});
+
 app.listen(5000, () => {
   console.log(`Server running in port: ${5000}`);
 });
