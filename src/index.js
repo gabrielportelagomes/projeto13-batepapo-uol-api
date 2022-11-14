@@ -125,7 +125,20 @@ app.get("/messages", async (req, res) => {
 
   try {
     const messages = await db.collection("messages").find().toArray();
-    res.send(messages);
+    const messageFilter = messages
+      .filter((message) => {
+        if (
+          message.type === "message" ||
+          message.type === "status" ||
+          message.to === user ||
+          message.from === user
+        ) {
+          return message;
+        }
+      })
+      .slice(-limit);
+
+    res.send(messageFilter);
   } catch (err) {
     console.log(err);
     res.sendStatus(500);
@@ -179,7 +192,7 @@ async function deleteUser() {
   });
 }
 
-setInterval(deleteUser, 15000)
+setInterval(deleteUser, 15000);
 
 app.listen(5000, () => {
   console.log(`Server running in port: ${5000}`);
