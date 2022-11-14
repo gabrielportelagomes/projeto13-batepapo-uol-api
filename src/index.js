@@ -105,7 +105,7 @@ app.post("/messages", async (req, res) => {
   try {
     const resgisteredUser = await db
       .collection("participants")
-      .findOne({ from });
+      .findOne({ name: from });
 
     if (!resgisteredUser) {
       res.sendStatus(422);
