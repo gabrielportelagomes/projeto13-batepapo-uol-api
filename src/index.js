@@ -153,6 +153,34 @@ app.post("/status", async (req, res) => {
   }
 });
 
+async function deleteUser() {
+  const users = await db.collection("participants").find().toArray();
+  const deletedUsers = users.filter((user) => {
+    if (Date.now() - user.lastStatus > 10000) {
+      return user;
+    }
+  });
+
+  deletedUsers.forEach(async (deletedUser) => {
+    try {
+      await db.collection("participants").deleteOne({ name: deletedUser.name });
+
+      const logOutStatus = {
+        from: deletedUser.name,
+        to: "Todos",
+        text: "sai da sala...",
+        type: "status",
+        time: dayjs(Date.now()).format("HH:mm:ss"),
+      };
+      await db.collection("messages").insertOne(logOutStatus);
+    } catch (error) {
+      console.log(error);
+    }
+  });
+}
+
+setInterval(deleteUser, 15000)
+
 app.listen(5000, () => {
   console.log(`Server running in port: ${5000}`);
 });
