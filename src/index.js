@@ -128,19 +128,54 @@ app.delete("/messages/:id", async (req, res) => {
     .findOne({ _id: ObjectId(id) });
 
   if (!message) {
-    console.log(message);
     res.sendStatus(404);
     return;
   }
 
   if (message.from !== user) {
-    console.log(message.to);
     res.sendStatus(401);
     return;
   }
 
   try {
     await db.collection("messages").deleteOne({ _id: new ObjectId(id) });
+    res.sendStatus(201);
+  } catch (err) {
+    console.log(err);
+    res.sendStatus(500);
+  }
+});
+
+app.put("/messages/:id", async (req, res) => {
+  const { id } = req.params;
+  const { to, text, type } = req.body;
+  const from = req.headers.user;
+
+  const validation = messageSchema.validate(req.body, { abortEarly: false });
+
+  if (validation.error) {
+    res.sendStatus(422);
+    return;
+  }
+
+  const message = await db
+    .collection("messages")
+    .findOne({ _id: ObjectId(id) });
+
+  if (!message) {
+    res.sendStatus(404);
+    return;
+  }
+
+  if (message.from !== from) {
+    res.sendStatus(401);
+    return;
+  }
+
+  try {
+    await db
+      .collection("messages")
+      .updateOne({ _id: new ObjectId(id) }, { $set: req.body });
     res.sendStatus(201);
   } catch (err) {
     console.log(err);
