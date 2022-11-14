@@ -9,6 +9,12 @@ const userSchema = joi.object({
   name: joi.string().trim().required(),
 });
 
+const messageSchema = joi.object({
+  to: joi.string().required(),
+  text: joi.string().required(),
+  type: joi.valid("message", "private_message"),
+});
+
 const app = express();
 
 dotenv.config();
@@ -49,7 +55,9 @@ app.post("/participants", async (req, res) => {
   };
 
   try {
-    const resgisteredUser = await db.collection("participants").findOne({ name });
+    const resgisteredUser = await db
+      .collection("participants")
+      .findOne({ name });
 
     if (resgisteredUser) {
       res.sendStatus(409);
@@ -79,6 +87,13 @@ app.post("/messages", async (req, res) => {
   const { to, text, type } = req.body;
   const from = req.headers.user;
 
+  const validation = messageSchema.validate(req.body, { abortEarly: false });
+
+  if (validation.error) {
+    res.sendStatus(422);
+    return;
+  }
+
   const newMessage = {
     from,
     to,
@@ -88,6 +103,14 @@ app.post("/messages", async (req, res) => {
   };
 
   try {
+    const resgisteredUser = await db
+      .collection("participants")
+      .findOne({from});
+
+    if (!resgisteredUser) {
+      res.sendStatus(422);
+      return;
+    }
     await db.collection("messages").insertOne(newMessage);
     res.sendStatus(201);
   } catch (err) {
