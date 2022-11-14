@@ -4,6 +4,7 @@ import { MongoClient, ObjectId } from "mongodb";
 import dotenv from "dotenv";
 import dayjs from "dayjs";
 import joi from "joi";
+import { stripHtml } from "string-strip-html";
 
 const userSchema = joi.object({
   name: joi.string().trim().required(),
@@ -32,7 +33,7 @@ try {
 }
 
 app.post("/participants", async (req, res) => {
-  const { name } = req.body;
+  const name = stripHtml(req.body.name).result.trim();
 
   const validation = userSchema.validate(req.body, { abortEarly: false });
 
@@ -84,8 +85,10 @@ app.get("/participants", async (req, res) => {
 });
 
 app.post("/messages", async (req, res) => {
-  const { to, text, type } = req.body;
-  const from = req.headers.user;
+  const to = stripHtml(req.body.to).result.trim();
+  const text = stripHtml(req.body.text).result.trim();
+  const type = stripHtml(req.body.type).result.trim();
+  const from = stripHtml(req.headers.user).result.trim();
 
   const validation = messageSchema.validate(req.body, { abortEarly: false });
 
@@ -120,8 +123,8 @@ app.post("/messages", async (req, res) => {
 });
 
 app.delete("/messages/:id", async (req, res) => {
-  const { id } = req.params;
-  const user = req.headers.user;
+  const id = stripHtml(req.params.id).result.trim();
+  const user = stripHtml(req.headers.user).result.trim();
 
   const message = await db
     .collection("messages")
@@ -147,9 +150,11 @@ app.delete("/messages/:id", async (req, res) => {
 });
 
 app.put("/messages/:id", async (req, res) => {
-  const { id } = req.params;
-  const { to, text, type } = req.body;
-  const from = req.headers.user;
+  const id = stripHtml(req.params.id).result.trim();
+  const to = stripHtml(req.body.to).result.trim();
+  const text = stripHtml(req.body.text).result.trim();
+  const type = stripHtml(req.body.type).result.trim();
+  const from = stripHtml(req.headers.user).result.trim();
 
   const validation = messageSchema.validate(req.body, { abortEarly: false });
 
@@ -157,6 +162,12 @@ app.put("/messages/:id", async (req, res) => {
     res.sendStatus(422);
     return;
   }
+
+  const newMessage = {
+    to,
+    text,
+    type,
+  };
 
   const message = await db
     .collection("messages")
@@ -175,7 +186,7 @@ app.put("/messages/:id", async (req, res) => {
   try {
     await db
       .collection("messages")
-      .updateOne({ _id: new ObjectId(id) }, { $set: req.body });
+      .updateOne({ _id: new ObjectId(id) }, { $set: newMessage });
     res.sendStatus(201);
   } catch (err) {
     console.log(err);
@@ -184,8 +195,8 @@ app.put("/messages/:id", async (req, res) => {
 });
 
 app.get("/messages", async (req, res) => {
-  const limit = Number(req.query.limit);
-  const user = req.headers.user;
+  const limit = Number(stripHtml(req.query.limit).result.trim());
+  const user = stripHtml(req.headers.user).result.trim();
 
   try {
     const messages = await db.collection("messages").find().toArray();
@@ -210,7 +221,7 @@ app.get("/messages", async (req, res) => {
 });
 
 app.post("/status", async (req, res) => {
-  const name = req.headers.user;
+  const name = stripHtml(req.headers.user).result.trim();
 
   const resgisteredUser = await db.collection("participants").findOne({ name });
 
