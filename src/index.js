@@ -105,7 +105,7 @@ app.post("/messages", async (req, res) => {
   try {
     const resgisteredUser = await db
       .collection("participants")
-      .findOne({from});
+      .findOne({ from });
 
     if (!resgisteredUser) {
       res.sendStatus(422);
@@ -120,6 +120,9 @@ app.post("/messages", async (req, res) => {
 });
 
 app.get("/messages", async (req, res) => {
+  const limit = Number(req.query.limit);
+  const user = req.headers.user;
+
   try {
     const messages = await db.collection("messages").find().toArray();
     res.send(messages);
@@ -132,10 +135,18 @@ app.get("/messages", async (req, res) => {
 app.post("/status", async (req, res) => {
   const name = req.headers.user;
 
+  const resgisteredUser = await db.collection("participants").findOne({ name });
+
+  if (!resgisteredUser) {
+    res.sendStatus(404);
+    return;
+  }
+
   try {
     await db
       .collection("participants")
       .updateOne({ name }, { $set: { lastStatus: Date.now() } });
+    res.sendStatus(200);
   } catch (err) {
     console.log(err);
     res.sendStatus(500);
