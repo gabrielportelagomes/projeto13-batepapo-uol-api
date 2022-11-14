@@ -3,6 +3,11 @@ import cors from "cors";
 import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
 import dayjs from "dayjs";
+import joi from "joi";
+
+const userSchema = joi.object({
+  name: joi.string().trim().required(),
+});
 
 const app = express();
 
@@ -23,12 +28,17 @@ try {
 app.post("/participants", async (req, res) => {
   const { name } = req.body;
 
+  const validation = userSchema.validate(req.body, { abortEarly: false });
+
+  if (validation.error) {
+    res.sendStatus(422);
+    return;
+  }
+
   const newParticipant = {
     name,
     lastStatus: Date.now(),
   };
-
-  console.log(newParticipant.lastStatus);
 
   const loginStatus = {
     from: newParticipant.name,
@@ -39,6 +49,13 @@ app.post("/participants", async (req, res) => {
   };
 
   try {
+    const resgisteredUser = await db.collection("participants").findOne({ name });
+
+    if (resgisteredUser) {
+      res.sendStatus(409);
+      return;
+    }
+
     await db.collection("participants").insertOne(newParticipant);
     await db.collection("messages").insertOne(loginStatus);
     res.sendStatus(201);
